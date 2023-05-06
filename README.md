@@ -1,5 +1,5 @@
 # elm-ring-buffer
-A ring buffer queue with the simplest API.
+A ring buffer queue with a simple API.
 Note that maximum count of elements in a ring buffer is restricted to $2^m - 1$,
 where $m$ is specified at the creation.
 `head`, `enqueue`, `dequeue`, and `length` takes $\varTheta(1)$ time.
@@ -15,3 +15,4 @@ where $m$ is specified at the creation.
       |> RingBuffer.toList
       == [ 3, 4, 5 ]
 
+The time taken to `enqueue` and `dequeue` operation is $\varTheta(1)$ not only in average but in every case, so this package is useful for implementing queue which is updated frequently and required to response fast, like in animation.

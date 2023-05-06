@@ -1,4 +1,4 @@
-module RingBuffer exposing (RingBuffer, create, dequeue, enqueue, enqueueList, head, isEmpty, isFull, length, toList)
+module RingBuffer exposing (RingBuffer, clear, create, dequeue, enqueue, enqueueList, head, isEmpty, isFull, length, toList)
 
 import Array exposing (Array)
 import Bitwise
@@ -57,7 +57,7 @@ isEmpty (RingBuffer _ writeIndex readIndex _) =
 
 {-| checks if the ring buffer is full.
 
-    RingBuffer.create 2
+    RingBuffer.create 2 0
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.isFull
@@ -71,11 +71,11 @@ isFull (RingBuffer bits writeIndex readIndex _) =
 
 {-| returns heading element of the ring buffer. Here "heading element" means "living oldest element".
 
-    RingBuffer.create 2
+    RingBuffer.create 2 0
         |> RingBuffer.head
         == Nothing
 
-    RingBuffer.create 2
+    RingBuffer.create 2 0
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.head
@@ -93,13 +93,13 @@ head (RingBuffer _ writeIndex readIndex arr) =
 
 {-| adds new content to the ring buffer. When the buffer is full, oldest content will be overwritten.
 
-    RingBuffer.create 2
+    RingBuffer.create 2 0
         |> RingBuffer.enqueue 0
         |> RingBuffer.enqueue 1
         |> RingBuffer.toList
         == [ 0, 1 ]
 
-    RingBuffer.create 2
+    RingBuffer.create 2 0
         |> RingBuffer.enqueue 0
         |> RingBuffer.enqueue 1
         |> RingBuffer.enqueue 2
@@ -131,7 +131,7 @@ enqueue a (RingBuffer bits writeIndex readIndex arr) =
 
 {-| removes oldest content from the ring buffer. When the buffer is empty, nothing happens.
 
-    RingBuffer.create 10
+    RingBuffer.create 10 0
         |> RingBuffer.enqueue 100
         |> RingBuffer.enqueue 200
         |> RingBuffer.enqueue 300
@@ -139,10 +139,11 @@ enqueue a (RingBuffer bits writeIndex readIndex arr) =
         |> RingBuffer.toList
         == [ 200, 300 ]
 
-    RingBuffer.create 10
+    RingBuffer.create 10 0
         |> RingBuffer.dequeue
         |> RingBuffer.toList
-        == RingBuffer.create 10
+        == RingBuffer.create 10 0
+        |> RingBuffer.toList
 
 -}
 dequeue : RingBuffer a -> RingBuffer a
@@ -160,7 +161,7 @@ dequeue (RingBuffer bits writeIndex readIndex arr) =
 
 {-| gets the whole list of elements in the queue.
 
-    RingBuffer.create 10
+    RingBuffer.create 10 0
         |> RingBuffer.enqueue 100
         |> RingBuffer.enqueue 200
         |> RingBuffer.enqueue 300
@@ -181,7 +182,7 @@ toList rb =
 
 {-| gets length of a ring buffer. Here "length" means how many elements are in the queue, not the whole buffer size.
 
-    RingBuffer.create 10
+    RingBuffer.create 10 0
         |> RingBuffer.enqueue 100
         |> RingBuffer.enqueue 200
         |> RingBuffer.enqueue 300
@@ -197,7 +198,7 @@ length (RingBuffer bits writeIndex readIndex _) =
 
 {-| takes in all elements in a list in left-to-right order.
 
-    RingBuffer.create 2
+    RingBuffer.create 2 0
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.toList
@@ -207,3 +208,30 @@ length (RingBuffer bits writeIndex readIndex _) =
 enqueueList : List a -> RingBuffer a -> RingBuffer a
 enqueueList list rb =
     List.foldl enqueue rb list
+
+
+{-| Deletes all elements in the queue.
+
+    RingBuffer.create 3 0
+        |> RingBuffer.enqueue 0
+        |> RingBuffer.enqueue 1
+        |> RingBuffer.enqueue 2
+        |> RingBuffer.enqueue 3
+        |> RingBuffer.enqueue 4
+        |> RingBuffer.clear
+        |> RingBuffer.toList
+        == []
+
+Note that this function is realized by changing pointer index of the ring queue, so internaly the deleted data is not cleared. So, comparison between two RingBuffers may cause unexpected result!
+
+    RingBuffer.create 3 0
+        |> RingBuffer.enqueue 1
+        |> RingBuffer.clear
+        == RingBuffer.create 3 0 --> False
+
+Instead, you should compare after converting with `toList` function.
+
+-}
+clear : RingBuffer a -> RingBuffer a
+clear (RingBuffer bits writeIndex readIndex arr) =
+    RingBuffer bits writeIndex writeIndex arr
