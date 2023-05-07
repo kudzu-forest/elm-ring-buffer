@@ -1,11 +1,45 @@
-module RingBuffer exposing (RingBuffer, clear, create, dequeue, enqueue, enqueueList, head, isEmpty, isFull, length, toList)
+module RingBuffer exposing
+    ( RingBuffer
+    , create
+    , enqueue, dequeue, clear
+    , isEmpty, isFull, length, head
+    , toList
+    , enqueueList
+    )
+
+{-| A simple implementation of ring buffer with size = 2^m. The enqueue and dequeue operation and query about length takes O(1) time, while creation takes O(size) time. This package can be used as one way queue, if given sufficient value of m.
+
+
+# Types
+
+@docs RingBuffer
+
+
+# Constraction
+
+@docs create
+
+
+# Modification
+
+@docs enqueue, enqueList, dequeue, clear
+
+
+# Query
+
+@docs isEmpty, isFull, length, head
+
+
+# Deconstraction
+
+@docs toList
+
+-}
 
 import Array exposing (Array)
 import Bitwise
 
 
-{-| A simple implementation of ring buffer with size = 2^m. The enqueue and dequeue operation and query about length takes O(1) time, while creation takes O(size) time. This package can be used as one way queue, if given sufficient value of m.
--}
 type RingBuffer a
     = RingBuffer Int Int Int (Array a) -- RingBuffer bits writeIndex readIndex dataArray. writeIndex is always preceding readIndex.
 
@@ -17,7 +51,7 @@ Notice that ring buffer with n bit can contain 2^n - 1 elements, not 2^n.
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.toList
-        == [ 98, 99, 100 ]
+        --> [ 98, 99, 100 ]
 
 -}
 create : Int -> a -> RingBuffer a
@@ -36,18 +70,18 @@ create bitsCount a =
 
     RingBuffer.create 3 ""
         |> RingBuffer.isEmpty
-        == True
+        --> True
 
     RingBuffer.create 3 ""
         |> RingBuffer.enqueue "first element"
         |> RingBuffer.isEmpty
-        == False
+        --> False
 
     RingBuffer.create 3 ""
         |> RingBuffer.enqueue "first element"
         |> RingBuffer.dequeue
         |> RingBuffer.isEmpty
-        == True
+        --> True
 
 -}
 isEmpty : RingBuffer a -> Bool
@@ -61,7 +95,7 @@ isEmpty (RingBuffer _ writeIndex readIndex _) =
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.isFull
-        == True
+        --> True
 
 -}
 isFull : RingBuffer a -> Bool
@@ -73,13 +107,13 @@ isFull (RingBuffer bits writeIndex readIndex _) =
 
     RingBuffer.create 2 0
         |> RingBuffer.head
-        == Nothing
+        --> Nothing
 
     RingBuffer.create 2 0
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.head
-        == Just 98
+        --> Just 98
 
 -}
 head : RingBuffer a -> Maybe a
@@ -97,7 +131,7 @@ head (RingBuffer _ writeIndex readIndex arr) =
         |> RingBuffer.enqueue 0
         |> RingBuffer.enqueue 1
         |> RingBuffer.toList
-        == [ 0, 1 ]
+        --> [ 0, 1 ]
 
     RingBuffer.create 2 0
         |> RingBuffer.enqueue 0
@@ -106,7 +140,7 @@ head (RingBuffer _ writeIndex readIndex arr) =
         |> RingBuffer.enqueue 3
         |> RingBuffer.enqueue 4
         |> RingBuffer.toList
-        == [ 2, 3, 4 ]
+        --> [ 2, 3, 4 ]
 
 -}
 enqueue : a -> RingBuffer a -> RingBuffer a
@@ -137,13 +171,15 @@ enqueue a (RingBuffer bits writeIndex readIndex arr) =
         |> RingBuffer.enqueue 300
         |> RingBuffer.dequeue
         |> RingBuffer.toList
-        == [ 200, 300 ]
+        --> [ 200, 300 ]
 
     RingBuffer.create 10 0
         |> RingBuffer.dequeue
         |> RingBuffer.toList
-        == RingBuffer.create 10 0
-        |> RingBuffer.toList
+        == ( RingBuffer.create 10 0
+               |> RingBuffer.toList
+           )
+           --> True
 
 -}
 dequeue : RingBuffer a -> RingBuffer a
@@ -167,17 +203,22 @@ dequeue (RingBuffer bits writeIndex readIndex arr) =
         |> RingBuffer.enqueue 300
         |> RingBuffer.dequeue
         |> RingBuffer.toList
-        == [ 200, 300 ]
+        --> [ 200, 300 ]
 
 -}
 toList : RingBuffer a -> List a
 toList rb =
+    toListHelper [] rb
+
+
+toListHelper : List a -> RingBuffer a -> List a
+toListHelper list rb =
     case head rb of
         Nothing ->
             []
 
         Just a ->
-            a :: toList (dequeue rb)
+            toListHelper (a :: list) (dequeue rb)
 
 
 {-| gets length of a ring buffer. Here "length" means how many elements are in the queue, not the whole buffer size.
@@ -188,7 +229,7 @@ toList rb =
         |> RingBuffer.enqueue 300
         |> RingBuffer.dequeue
         |> RingBuffer.length
-        == 2
+        --> 2
 
 -}
 length : RingBuffer a -> Int
@@ -202,12 +243,13 @@ length (RingBuffer bits writeIndex readIndex _) =
         |> RingBuffer.enqueueList
             (List.range 0 100)
         |> RingBuffer.toList
-        == [ 98, 99, 100 ]
+        --> [ 98, 99, 100 ]
 
 -}
 enqueueList : List a -> RingBuffer a -> RingBuffer a
 enqueueList list rb =
-    List.foldl enqueue rb list
+    list
+        |> List.foldl enqueue rb
 
 
 {-| Deletes all elements in the queue.
@@ -220,7 +262,7 @@ enqueueList list rb =
         |> RingBuffer.enqueue 4
         |> RingBuffer.clear
         |> RingBuffer.toList
-        == []
+        == [] --> True
 
 Note that this function is realized by changing pointer index of the ring queue, so internaly the deleted data is not cleared. So, comparison between two RingBuffers may cause unexpected result!
 
