@@ -1,13 +1,12 @@
 module RingBuffer exposing
     ( RingBuffer
     , create
-    , enqueue, dequeue, clear
-    , isEmpty, isFull, length, head
+    , enqueue, enqueueList, dequeue, clear
+    , isEmpty, isFull, length, head, rear
     , toList
-    , enqueueList
     )
 
-{-| A simple implementation of ring buffer with size = 2^m. The enqueue and dequeue operation and query about length takes O(1) time, while creation takes O(size) time. This package can be used as one way queue, if given sufficient value of m.
+{-| A queue implemented with ring buffer whose maximum element number is $2^m - 1$($m$ is given by user at the initialization). The `enqueue` and `dequeue` operation and querys only $O(1)$ time at any case(unlike in implementations with `List`). Query about inner elements are not implemented because it is slow operation in this implementation, so if you needed use `RingBuffer.Tagged` module.
 
 
 # Types
@@ -22,12 +21,12 @@ module RingBuffer exposing
 
 # Modification
 
-@docs enqueue, enqueList, dequeue, clear
+@docs enqueue, enqueueList, dequeue, clear
 
 
 # Query
 
-@docs isEmpty, isFull, length, head
+@docs isEmpty, isFull, length, head, rear
 
 
 # Deconstraction
@@ -123,6 +122,30 @@ head (RingBuffer _ writeIndex readIndex arr) =
 
     else
         Array.get readIndex arr
+
+
+{-| Returns the newest element of the ring buffer.
+
+    RingBuffer.create 2 0
+        |> RingBuffer.rear
+        --> Nothing
+
+    RingBuffer.create 2 0
+        |> RingBuffer.enqueueList
+            (List.range 0 100)
+        |> RingBuffer.rear
+        --> Just 100
+
+-}
+rear : RingBuffer a -> Maybe a
+rear (RingBuffer bits writeIndex readIndex arr) =
+    if readIndex == writeIndex then
+        Nothing
+
+    else
+        Array.get
+            (Bitwise.and bits (writeIndex + bits))
+            arr
 
 
 {-| adds new content to the ring buffer. When the buffer is full, oldest content will be overwritten.
